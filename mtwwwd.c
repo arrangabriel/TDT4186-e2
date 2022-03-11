@@ -33,9 +33,6 @@ int main(int argc, char *argv[])
     struct sockaddr_in serv_addr, cli_addr;
     int addrlen = sizeof(serv_addr);
 
-    // not sure what this is
-    int n;
-
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (socket_fd == 0)
@@ -60,11 +57,13 @@ int main(int argc, char *argv[])
         if ((new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen)) < 0)
             error("accept failed");
         bzero(buffer, bufferlen);
-        if (n = read(new_socket_fd, buffer, bufferlen - 1) < 0)
+        if (read(new_socket_fd, buffer, bufferlen - 1) < 0)
         {
             perror("read failed");
         }
+
         printf("%s\n", buffer);
+
         snprintf(body, sizeof(body),
                  "<html>\n<body>\n"
                  "<h1>Hello web browser</h1>\nYour request was\n"
@@ -76,7 +75,7 @@ int main(int argc, char *argv[])
                  "Content-Type: text/html\n"
                  "Content-Length: %d\n\n%s",
                  strlen(body), body);
-        if (n = write(new_socket_fd, msg, strlen(msg)) < 0)
+        if (write(new_socket_fd, msg, strlen(msg)) < 0)
         {
             perror("socket write failed");
         }
