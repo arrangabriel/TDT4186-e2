@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
         printf("Hey\n");
         int bufferlen = sizeof(buffer);
         clilen = sizeof(cli_addr);
-        if ((new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen) < 0))
+        if ((new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen)) < 0)
             error("accept failed");
         bzero(buffer, bufferlen);
         if (n = read(new_socket_fd, buffer, bufferlen - 1) < 0)
