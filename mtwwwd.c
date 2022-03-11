@@ -62,8 +62,6 @@ int main(int argc, char *argv[])
             perror("read failed");
         }
 
-        printf("%s\n", buffer);
-
         snprintf(body, sizeof(body),
                  "<html>\n<body>\n"
                  "<h1>Hello web browser</h1>\nYour request was\n"
