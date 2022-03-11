@@ -4,6 +4,7 @@
 //#include <linux/in.h>
 #include <unistd.h>
 #include <strings.h>
+#include <string.h>
 #include <arpa/inet.h>
 
 #define MAXREQ (4096 * 1024)
