@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
-#include <linux/in.h>
+//#include <linux/in.h>
 #include <unistd.h>
 #include <strings.h>
 #include <arpa/inet.h>
@@ -32,6 +32,9 @@ int main(int argc, char *argv[])
     struct sockaddr_in serv_addr, cli_addr;
     int addrlen = sizeof(serv_addr);
 
+    // not sure what this is
+    int n;
+
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (socket_fd == 0)
@@ -49,10 +52,33 @@ int main(int argc, char *argv[])
     if (listen(socket_fd, 1) < 0)
         error("listen failed");
 
-    if (new_socket_fd = accept(socket_fd, (struct sockaddr *)&serv_addr, (socklen_t *)&addrlen) < 0)
-        error("accept failed");
+    while (1)
+    {
+        int bufferlen = sizeof(buffer);
+        clilen = sizeof(cli_addr);
+        if (new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen) < 0)
+            error("accept failed");
+        bzero(buffer, bufferlen);
+        if (n = read(new_socket_fd, buffer, bufferlen - 1) < 0)
+        {
+            perror("read failed");
+        }
+
+        snprintf(body, sizeof(body),
+                 "<html>\n<body>\n"
+                 "<h1>Hello web browser</h1>\nYour request was\n"
+                 "<pre>%s</pre>\n"
+                 "</body>\n</html>\n",
+                 buffer);
+        snprintf(msg, sizeof(msg),
+                 "HTTP/1.0 200 OK\n"
+                 "Content-Type: text/html\n"
+                 "Content-Length: %d\n\n%s",
+                 strlen(body), body);
+    }
 
     int readval = read(new_socket_fd, buffer, sizeof(buffer));
     printf("%s\n", buffer);
+
     return 0;
 }
