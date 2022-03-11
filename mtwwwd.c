@@ -55,7 +55,6 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-        printf("Hey\n");
         int bufferlen = sizeof(buffer);
         clilen = sizeof(cli_addr);
         if ((new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen)) < 0)
