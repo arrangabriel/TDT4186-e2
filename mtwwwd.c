@@ -75,10 +75,10 @@ int main(int argc, char *argv[])
                  "Content-Type: text/html\n"
                  "Content-Length: %d\n\n%s",
                  strlen(body), body);
+        if (n = write(new_socket_fd, msg, strlen(msg)) < 0)
+        {
+            perror("socket write failed");
+        }
+        close(new_socket_fd);
     }
-
-    int readval = read(new_socket_fd, buffer, sizeof(buffer));
-    printf("%s\n", buffer);
-
-    return 0;
 }
