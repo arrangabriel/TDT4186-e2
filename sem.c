@@ -1,3 +1,4 @@
+#include <pthread.h>
 #include "sem.h"
 #include <stdio.h>
 #include <stdlib.h>
