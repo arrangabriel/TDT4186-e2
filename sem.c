@@ -35,7 +35,7 @@ void P(SEM *sem)
         pthread_cond_wait(&sem->cond, &sem->mutex);
     }
 
-    sem->count--;
+    (sem->count)--;
     printf("postloop%i\n", sem->count);
     pthread_mutex_unlock(&sem->mutex);
 }

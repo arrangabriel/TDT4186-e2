@@ -7,6 +7,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include "bbuffer.h"
+#include <pthread.h>
 
 #define MAXREQ (4096 * 1024)
 
@@ -16,11 +17,49 @@ void error(const char *msg)
     exit(EXIT_FAILURE);
 }
 
+void *handle_request(void *bb) {
+    // in child
+    while (1)
+    {
+        char buffer[MAXREQ], body[MAXREQ], msg[MAXREQ];
+        int bufferlen = sizeof(buffer);
+        printf("preget\n");
+        int fd = bb_get(bb);
+        printf("postget\n");
+
+        bzero(buffer, bufferlen);
+
+        // TODO fix this
+        if (read(fd, buffer, bufferlen - 1) < 0)
+        {
+            perror("read failed");
+        }
+
+        sleep(5);
+        /*
+        snprintf(body, sizeof(body),
+                    "<html>\n<body>\n"
+                    "<h1>Hello web browser</h1>\nYour request was\n"
+                    "<pre>%s</pre>\n"
+                    "</body>\n</html>\n",
+                    buffer);
+            snprint(msg, sizeof(msg),
+                    "HTTP/0.9 200 OK\n"
+                    "Content-Type: text/html\n"
+                    "Content-Length: %d\n\n%s",
+                    strlen(body), body);
+            */
+        write(fd, buffer, strlen(buffer));
+
+        close(fd);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 5)
     {
-        printf("Wrong number of arguments supplied. Should be 2, was %i.\n", argc - 1);
+    printf("Wrong number of arguments supplied. Should be 2, was %i.\n", argc - 1);
         return 1;
     }
 
@@ -56,65 +95,21 @@ int main(int argc, char *argv[])
 
     BNDBUF *bb = bb_init(buffer_size);
 
-    pid_t pid;
+    pthread_t threads[thread_count];
 
     for (int i = 0; i < thread_count; i++)
     {
-        pid = fork();
-        if (!pid)
-            break;
-        pids[i] = pid;
+        pthread_create(&threads[i], NULL, &handle_request, bb);
     }
     // printf("%i\n", pid);
-    if (pid)
-    {
         // in parent
-        while (1)
-        {
-            clilen = sizeof(cli_addr);
-            if ((new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen)) < 0)
-                error("accept failed");
-            printf("preadd\n");
-            bb_add(bb, new_socket_fd);
-            printf("postadd\n");
-        }
-    }
-    else
+    while (1)
     {
-        // in child
-        while (1)
-        {
-            char buffer[MAXREQ], body[MAXREQ], msg[MAXREQ];
-            int bufferlen = sizeof(buffer);
-            printf("preget\n");
-            int fd = bb_get(bb);
-            printf("postget\n");
-
-            bzero(buffer, bufferlen);
-
-            // TODO fix this
-            if (read(fd, buffer, bufferlen - 1) < 0)
-            {
-                perror("read failed");
-            }
-
-            sleep(5);
-            /*
-            snprintf(body, sizeof(body),
-                     "<html>\n<body>\n"
-                     "<h1>Hello web browser</h1>\nYour request was\n"
-                     "<pre>%s</pre>\n"
-                     "</body>\n</html>\n",
-                     buffer);
-            snprintf(msg, sizeof(msg),
-                     "HTTP/0.9 200 OK\n"
-                     "Content-Type: text/html\n"
-                     "Content-Length: %d\n\n%s",
-                     strlen(body), body);
-            */
-            write(fd, buffer, strlen(buffer));
-
-            close(fd);
-        }
+        clilen = sizeof(cli_addr);
+        if ((new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen)) < 0)
+            error("accept failed");
+        printf("preadd\n");
+        bb_add(bb, new_socket_fd);
+        printf("postadd\n");
     }
 }
