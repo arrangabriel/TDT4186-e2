@@ -9,7 +9,7 @@ struct SEM {
     pthread_cond_t cond;
 };
 
-SEM *sem_init(unsigned int initVal)
+SEM *sem_init(int initVal)
 {
     SEM* ptr = (SEM*) malloc(sizeof(SEM));
     ptr->count = initVal;
