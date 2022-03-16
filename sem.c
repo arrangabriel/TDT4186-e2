@@ -21,7 +21,7 @@ int sem_del(SEM* sem) {
 
 void P(SEM* sem) {
     while (sem->count < 1);
-    sem->count--; 
+    sem->count--;
 }
 
 void V(SEM* sem) {
