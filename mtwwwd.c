@@ -6,10 +6,9 @@
 #include <strings.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include "bbuffer.h"
 
 #define MAXREQ (4096 * 1024)
-
-char buffer[MAXREQ], body[MAXREQ], msg[MAXREQ];
 
 void error(const char *msg)
 {
@@ -19,7 +18,7 @@ void error(const char *msg)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3)
+    if (argc != 5)
     {
         printf("Wrong number of arguments supplied. Should be 2, was %i.\n", argc - 1);
         return 1;
@@ -27,6 +26,9 @@ int main(int argc, char *argv[])
 
     char *name = argv[1];
     int port = atoi(argv[2]);
+    int thread_count = atoi(argv[3]);
+    int buffer_size = atoi(argv[4]);
+
     int socket_fd, new_socket_fd;
     socklen_t clilen;
 
@@ -35,14 +37,14 @@ int main(int argc, char *argv[])
 
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (socket_fd == 0)
-        error("socket failed");
-
     bzero((char *)&serv_addr, addrlen);
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(port);
+
+    if (socket_fd == 0)
+        error("socket failed");
 
     if (bind(socket_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         error("bind failed");
@@ -50,33 +52,65 @@ int main(int argc, char *argv[])
     if (listen(socket_fd, 1) < 0)
         error("listen failed");
 
-    while (1)
-    {
-        int bufferlen = sizeof(buffer);
-        clilen = sizeof(cli_addr);
-        if ((new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen)) < 0)
-            error("accept failed");
-        bzero(buffer, bufferlen);
-        if (read(new_socket_fd, buffer, bufferlen - 1) < 0)
-        {
-            perror("read failed");
-        }
+    pid_t pids[thread_count];
 
-        snprintf(body, sizeof(body),
-                 "<html>\n<body>\n"
-                 "<h1>Hello web browser</h1>\nYour request was\n"
-                 "<pre>%s</pre>\n"
-                 "</body>\n</html>\n",
-                 buffer);
-        snprintf(msg, sizeof(msg),
-                 "HTTP/1.0 200 OK\n"
-                 "Content-Type: text/html\n"
-                 "Content-Length: %d\n\n%s",
-                 strlen(body), body);
-        if (write(new_socket_fd, msg, strlen(msg)) < 0)
+    BNDBUF *bb = bb_init(buffer_size);
+
+    pid_t pid;
+
+    for (int i = 0; i > thread_count; i++)
+    {
+        pid = fork();
+        if (!pid)
+            break;
+        pids[i] = pid;
+    }
+
+    if (pid)
+    {
+        // in parent
+        while (1)
         {
-            perror("socket write failed");
+            clilen = sizeof(cli_addr);
+            if ((new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen)) < 0)
+                error("accept failed");
+            bb_add(bb, new_socket_fd);
         }
-        close(new_socket_fd);
+    }
+    else
+    {
+        // in child
+        while (1)
+        {
+            char buffer[MAXREQ], body[MAXREQ], msg[MAXREQ];
+            int bufferlen = sizeof(buffer);
+
+            int fd = bb_get(bb);
+
+            bzero(buffer, bufferlen);
+
+            // TODO fix this
+            if (read(fd, buffer, bufferlen - 1) < 0)
+            {
+                perror("read failed");
+            }
+
+            snprintf(body, sizeof(body),
+                     "<html>\n<body>\n"
+                     "<h1>Hello web browser</h1>\nYour request was\n"
+                     "<pre>%s</pre>\n"
+                     "</body>\n</html>\n",
+                     buffer);
+            snprintf(msg, sizeof(msg),
+                     "HTTP/0.9 200 OK\n"
+                     "Content-Type: text/html\n"
+                     "Content-Length: %d\n\n%s",
+                     strlen(body), body);
+            if (write(fd, msg, strlen(msg)) < 0)
+            {
+                perror("socket write failed");
+            }
+            close(fd);
+        }
     }
 }
