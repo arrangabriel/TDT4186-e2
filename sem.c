@@ -9,7 +9,8 @@ struct SEM {
     pthread_cond_t cond;
 };
 
-SEM* sem_init(int initVal) {
+SEM *sem_init(unsigned int initVal)
+{
     SEM* ptr = (SEM*) malloc(sizeof(SEM));
     ptr->count = initVal;
     return ptr;
@@ -23,7 +24,8 @@ int sem_del(SEM* sem) {
 
 void P(SEM* sem) {
     pthread_mutex_lock(&sem->mutex);
-    while (!sem->count > 0) {
+    while (sem->count == 0)
+    {
         pthread_cond_wait(&sem->cond, &sem->mutex);
     }
     sem->count--;
