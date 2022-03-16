@@ -58,14 +58,14 @@ int main(int argc, char *argv[])
 
     pid_t pid;
 
-    for (int i = 0; i > thread_count; i++)
+    for (int i = 0; i < thread_count; i++)
     {
         pid = fork();
         if (!pid)
             break;
         pids[i] = pid;
     }
-
+    // printf("%i\n", pid);
     if (pid)
     {
         // in parent
@@ -74,7 +74,9 @@ int main(int argc, char *argv[])
             clilen = sizeof(cli_addr);
             if ((new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen)) < 0)
                 error("accept failed");
+            printf("preadd\n");
             bb_add(bb, new_socket_fd);
+            printf("postadd\n");
         }
     }
     else
@@ -84,8 +86,9 @@ int main(int argc, char *argv[])
         {
             char buffer[MAXREQ], body[MAXREQ], msg[MAXREQ];
             int bufferlen = sizeof(buffer);
-
+            printf("preget\n");
             int fd = bb_get(bb);
+            printf("postget\n");
 
             bzero(buffer, bufferlen);
 
@@ -95,6 +98,8 @@ int main(int argc, char *argv[])
                 perror("read failed");
             }
 
+            sleep(5);
+            /*
             snprintf(body, sizeof(body),
                      "<html>\n<body>\n"
                      "<h1>Hello web browser</h1>\nYour request was\n"
@@ -106,10 +111,9 @@ int main(int argc, char *argv[])
                      "Content-Type: text/html\n"
                      "Content-Length: %d\n\n%s",
                      strlen(body), body);
-            if (write(fd, msg, strlen(msg)) < 0)
-            {
-                perror("socket write failed");
-            }
+            */
+            write(fd, buffer, strlen(buffer));
+
             close(fd);
         }
     }

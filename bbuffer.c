@@ -1,4 +1,5 @@
 #include "sem.h"
+//#include "sem.c"
 #include "bbuffer.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,6 +38,7 @@ void bb_del(BNDBUF *bb)
 int bb_get(BNDBUF *bb)
 {
     P(bb->s_r);
+    printf("postp\n");
     int item = bb->buffer[bb->read];
     bb->read = (++bb->read) % bb->size;
     V(bb->s_w);
