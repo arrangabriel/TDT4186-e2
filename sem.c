@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 struct SEM {
-    unsigned int count;
+    int count;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 };
@@ -37,9 +37,4 @@ void V(SEM* sem) {
     sem->count++;
     pthread_mutex_signal(&sem->cond);
     pthread_mutex_unlock(&sem->mutex);
-}
-
-int main() {
-    SEM* p = sem_init(5);
-    printf("%i\n", p->count);
 }
