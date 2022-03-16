@@ -5,7 +5,7 @@
 #include <pthread.h>
 
 struct SEM {
-    int *count;
+    int count;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 };
@@ -14,6 +14,8 @@ SEM *sem_init(int initVal)
 {
     SEM* ptr = (SEM*) malloc(sizeof(SEM));
     ptr->count = initVal;
+    pthread_mutex_init(&ptr->mutex, NULL);
+    pthread_cond_init(&ptr->cond, NULL);
     return ptr;
 }
 
@@ -26,7 +28,7 @@ int sem_del(SEM* sem) {
 void P(SEM *sem)
 {
     pthread_mutex_lock(&sem->mutex);
-    printf("preloop%i\n", *sem->count);
+    printf("preloop%i\n", sem->count);
     while (sem->count == 0)
     {
         // printf("%i, loop \n", sem->count);
