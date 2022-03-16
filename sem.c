@@ -5,6 +5,8 @@
 
 struct SEM {
     unsigned int count;
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
 };
 
 SEM* sem_init(int initVal) {
@@ -20,12 +22,19 @@ int sem_del(SEM* sem) {
 }
 
 void P(SEM* sem) {
-    while (sem->count < 1);
-    sem->count--; 
+    pthread_mutex_lock(&sem->mutex);
+    while (!sem->count > 0) {
+        pthread_cond_wait(&sem->cond, &sem->mutex);
+    }
+    sem->count--;
+    pthread_mutex_unlock(&sem->mutex);
 }
 
 void V(SEM* sem) {
+    pthread_mutex_lock(&sem->mutex);
     sem->count++;
+    pthread_mutex_signal(&sem->cond);
+    pthread_mutex_unlock(&sem->mutex);
 }
 
 int main() {
