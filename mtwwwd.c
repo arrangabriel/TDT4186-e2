@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
-//#include <linux/in.h>
 #include <unistd.h>
 #include <strings.h>
 #include <string.h>
@@ -17,23 +16,18 @@ void error(const char *msg)
     exit(EXIT_FAILURE);
 }
 
-void *handle_request(void *bb) {
-    // in child
+void *handle_request(void *bb)
+{
     while (1)
     {
         char buffer[MAXREQ], body[MAXREQ], msg[MAXREQ];
         int bufferlen = sizeof(buffer);
-        printf("preget\n");
         int fd = bb_get(bb);
-        printf("postget\n");
 
         bzero(buffer, bufferlen);
 
-        // TODO fix this
         if (read(fd, buffer, bufferlen - 1) < 0)
-        {
-            perror("read failed");
-        }
+            error("read failed");
 
         sleep(5);
         /*
@@ -58,10 +52,7 @@ void *handle_request(void *bb) {
 int main(int argc, char *argv[])
 {
     if (argc != 5)
-    {
-    printf("Wrong number of arguments supplied. Should be 2, was %i.\n", argc - 1);
-        return 1;
-    }
+        error("Wrong number of arguments supplied. Should be 4");
 
     char *name = argv[1];
     int port = atoi(argv[2]);
@@ -101,15 +92,11 @@ int main(int argc, char *argv[])
     {
         pthread_create(&threads[i], NULL, &handle_request, bb);
     }
-    // printf("%i\n", pid);
-        // in parent
     while (1)
     {
         clilen = sizeof(cli_addr);
         if ((new_socket_fd = accept(socket_fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen)) < 0)
             error("accept failed");
-        printf("preadd\n");
         bb_add(bb, new_socket_fd);
-        printf("postadd\n");
     }
 }

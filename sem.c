@@ -20,7 +20,8 @@ SEM *sem_init(int initVal)
 }
 
 int sem_del(SEM* sem) {
-    //TODO return status
+    // Sjekk hva henrik har gjort her
+    // TODO return status
     free(sem);
     return 0;
 }
