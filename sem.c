@@ -29,23 +29,19 @@ int sem_del(SEM* sem) {
 void P(SEM *sem)
 {
     pthread_mutex_lock(&sem->mutex);
-    printf("preloop%i\n", sem->count);
     while (sem->count == 0)
     {
-        // printf("%i, loop \n", sem->count);
         pthread_cond_wait(&sem->cond, &sem->mutex);
     }
 
     (sem->count)--;
-    printf("postloop%i\n", sem->count);
     pthread_mutex_unlock(&sem->mutex);
 }
 
-void V(SEM* sem) {
-    printf("prev, %i\n", sem->count);
+void V(SEM *sem)
+{
     pthread_mutex_lock(&sem->mutex);
     sem->count++;
     pthread_cond_signal(&sem->cond);
     pthread_mutex_unlock(&sem->mutex);
-    printf("postv, %i\n", sem->count);
 }
