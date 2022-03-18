@@ -10,6 +10,8 @@
 
 #define MAXREQ (4096 * 1024)
 
+char *webroot;
+
 void error(const char *msg)
 {
     perror(msg);
@@ -20,7 +22,7 @@ void *handle_request(void *bb)
 {
     while (1)
     {
-        char buffer[MAXREQ], body[MAXREQ], msg[MAXREQ];
+        char buffer[MAXREQ];
         int bufferlen = sizeof(buffer);
         int fd = bb_get(bb);
 
@@ -29,20 +31,27 @@ void *handle_request(void *bb)
         if (read(fd, buffer, bufferlen - 1) < 0)
             error("read failed");
 
-        sleep(5);
-        /*
-        snprintf(body, sizeof(body),
-                    "<html>\n<body>\n"
-                    "<h1>Hello web browser</h1>\nYour request was\n"
-                    "<pre>%s</pre>\n"
-                    "</body>\n</html>\n",
-                    buffer);
-            snprint(msg, sizeof(msg),
-                    "HTTP/0.9 200 OK\n"
-                    "Content-Type: text/html\n"
-                    "Content-Length: %d\n\n%s",
-                    strlen(body), body);
-            */
+        char *urlstart = strstr(buffer, "/");
+        char *urlend = strstr(urlstart, " ");
+        size_t urllen = urlend - urlstart;
+        char *url = (char *)malloc(urllen);
+        strncpy(url, urlstart, urllen);
+
+        char root[sizeof(webroot) + urllen];
+        strcpy(root, webroot);
+        strcat(root, url);
+        free(url);
+
+        FILE *fp = fopen(root, "r");
+
+        fseek(fp, 0L, SEEK_END);
+        int filesize = ftell(fp) + 1;
+        rewind(fp);
+
+        fgets(buffer, filesize, fp);
+
+        // TODO fix exploit
+
         write(fd, buffer, strlen(buffer));
 
         close(fd);
@@ -54,10 +63,11 @@ int main(int argc, char *argv[])
     if (argc != 5)
         error("Wrong number of arguments supplied. Should be 4");
 
-    char *name = argv[1];
+    webroot = argv[1];
     int port = atoi(argv[2]);
     int thread_count = atoi(argv[3]);
     int buffer_size = atoi(argv[4]);
+    int opt = 1;
 
     int socket_fd, new_socket_fd;
     socklen_t clilen;
@@ -75,6 +85,11 @@ int main(int argc, char *argv[])
 
     if (socket_fd == 0)
         error("socket failed");
+
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
+    {
+        perror("Failed to set socket options");
+    }
 
     if (bind(socket_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         error("bind failed");
