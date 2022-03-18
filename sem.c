@@ -20,8 +20,8 @@ SEM *sem_init(int initVal)
 }
 
 int sem_del(SEM* sem) {
-    // Sjekk hva henrik har gjort her
-    // TODO return status
+    pthread_mutex_destroy(&sem->mutex);
+    pthread_cond_destroy(&sem->cond);
     free(sem);
     return 0;
 }
