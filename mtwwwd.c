@@ -49,6 +49,14 @@ void *handle_request(void *bb)
 
         FILE *fp = fopen(path, "r");
 
+        if (fp == NULL)
+        {
+            char notfound[] = "HTTP/0.9 404 Not Found";
+            write(fd, notfound, strlen(notfound));
+            close(fd);
+            continue;
+        }
+
         fseek(fp, 0L, SEEK_END);
         int filesize = ftell(fp) + 1;
         rewind(fp);
