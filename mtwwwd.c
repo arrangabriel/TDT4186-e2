@@ -18,6 +18,11 @@ void error(const char *msg)
     exit(EXIT_FAILURE);
 }
 
+int verify_path(char *rootpath, char *subpath)
+{
+    return strstr(subpath, rootpath) == NULL;
+}
+
 void *handle_request(void *bb)
 {
     while (1)
@@ -32,20 +37,42 @@ void *handle_request(void *bb)
             error("read failed");
 
         char *urlstart = strstr(buffer, "/");
-        char *urlend = strstr(urlstart, " ");
-        size_t urllen = urlend - urlstart;
+        // char *urlend = strstr(urlstart, " ");
+        // size_t urllen = urlend - urlstart;
+        size_t urllen = strlen(buffer) - (urlstart - &buffer[0]);
         char *url = (char *)malloc(urllen);
         strncpy(url, urlstart, urllen);
+
+        char root_path[PATH_MAX];
+        realpath(webroot, root_path);
 
         char root[sizeof(webroot) + urllen];
         strcpy(root, webroot);
         strcat(root, url);
         free(url);
-
         char path[PATH_MAX];
         realpath(root, path);
 
-        // TODO verify path
+        /****************************************************************************************************\
+         * EXPLOIT SOLUTIONS                                                                                *
+         * By using .. a client can access files on the entire file system where the server is running.     *
+         *                                                                                                  *
+         * This if-statement encompasses our two solutions to the exploit.                                  *
+         *                                                                                                  *
+         * The first verify_path check is the most sophisticated solution.                                  *
+         * First we translate both the full requested path (path),                                          *
+         * and the root path (root_path) to their respective canonical forms.                               *
+         * We then check to se if the root path is contained within the canonical form of the request path. *
+         *                                                                                                  *
+         * The second verify_path call simply checks if the request url contains (..).                      *
+         \***************************************************************************************************/
+        if (verify_path(root_path, path) || verify_path(buffer, ".."))
+        {
+            char forbidden[] = "HTTP/0.9 403 Forbidden";
+            write(fd, forbidden, strlen(forbidden));
+            close(fd);
+            continue;
+        }
 
         FILE *fp = fopen(path, "r");
 

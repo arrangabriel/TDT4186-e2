@@ -1,10 +1,10 @@
 #include "sem.h"
-//#include "sem.c"
 #include "bbuffer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <errno.h>
 
 struct BNDBUF
 {
@@ -21,6 +21,7 @@ struct BNDBUF
 
 BNDBUF *bb_init(unsigned int size)
 {
+    errno = 0;
     BNDBUF *b = malloc(sizeof(BNDBUF) + size * sizeof(int));
     b->s_r = sem_init(0);
     b->s_w = sem_init(size);
@@ -30,6 +31,12 @@ BNDBUF *bb_init(unsigned int size)
     pthread_mutex_init(&b->read_mutex, NULL);
     pthread_mutex_init(&b->write_mutex, NULL);
     memset(b->buffer, 0, sizeof(int) * size);
+    if (errno != 0)
+    {
+        free(b);
+        perror("Error in initialization, shutting down.");
+        exit(EXIT_FAILURE);
+    }
     return b;
 }
 
