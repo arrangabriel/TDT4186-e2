@@ -8,6 +8,8 @@
 #include "bbuffer.h"
 #include <pthread.h>
 #include <linux/limits.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #define MAXREQ (4096 * 1024)
 char *webroot;
@@ -66,7 +68,7 @@ void *handle_request(void *bb)
          *                                                                                                  *
          * The second verify_path call simply checks if the request url contains (..).                      *
          \***************************************************************************************************/
-        if (verify_path(root_path, path) || verify_path(buffer, ".."))
+        if (verify_path(root_path, path) || !verify_path(root, ".."))
         {
             char forbidden[] = "HTTP/0.9 403 Forbidden";
             write(fd, forbidden, strlen(forbidden));
@@ -76,7 +78,10 @@ void *handle_request(void *bb)
 
         FILE *fp = fopen(path, "r");
 
-        if (fp == NULL)
+        struct stat filetype;
+        stat(path, &filetype);
+
+        if (fp == NULL || !S_ISREG(filetype.st_mode))
         {
             char notfound[] = "HTTP/0.9 404 Not Found";
             write(fd, notfound, strlen(notfound));
