@@ -54,6 +54,12 @@ void *handle_request(void *bb)
         int filesize = ftell(fp) + 1;
         rewind(fp);
 
+        snprint(buffer, "HTTP/0.9 200 OK\n"
+                        "Content-Type: text/html\n"
+                        "Content-Length: %d\n\n",
+                filesize);
+        write(fd, buffer, strlen(buffer));
+
         while (fread(buffer, sizeof(char), MAXREQ, fp))
         {
             write(fd, buffer, strlen(buffer));
