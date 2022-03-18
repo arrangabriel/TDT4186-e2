@@ -39,9 +39,8 @@ void *handle_request(void *bb)
             error("read failed");
 
         char *urlstart = strstr(buffer, "/");
-        // char *urlend = strstr(urlstart, " ");
-        // size_t urllen = urlend - urlstart;
-        size_t urllen = strlen(buffer) - (urlstart - &buffer[0]);
+        char *urlend = strstr(urlstart, " ");
+        size_t urllen = urlend - urlstart;
         char *url = (char *)malloc(urllen);
         strncpy(url, urlstart, urllen);
 
@@ -116,16 +115,16 @@ int main(int argc, char *argv[])
     int socket_fd, new_socket_fd;
     socklen_t clilen;
 
-    struct sockaddr_in serv_addr, cli_addr;
+    struct sockaddr_in6 serv_addr, cli_addr;
     int addrlen = sizeof(serv_addr);
 
-    socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    socket_fd = socket(AF_INET6, SOCK_STREAM, 0);
 
     bzero((char *)&serv_addr, addrlen);
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(port);
+    serv_addr.sin6_family = AF_INET6;
+    serv_addr.sin6_addr = in6addr_any;
+    serv_addr.sin6_port = htons(port);
 
     if (socket_fd == 0)
         error("socket failed");
