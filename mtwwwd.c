@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include "bbuffer.h"
 #include <pthread.h>
+#include <linux/limits.h>
 
 #define MAXREQ (4096 * 1024)
 
@@ -42,17 +43,22 @@ void *handle_request(void *bb)
         strcat(root, url);
         free(url);
 
-        FILE *fp = fopen(root, "r");
+        char path[PATH_MAX];
+        realpath(root, path);
+
+        // TODO verify path
+
+        FILE *fp = fopen(path, "r");
 
         fseek(fp, 0L, SEEK_END);
         int filesize = ftell(fp) + 1;
         rewind(fp);
 
-        fgets(buffer, filesize, fp);
-
-        // TODO fix exploit
-
-        write(fd, buffer, strlen(buffer));
+        while (fread(buffer, sizeof(char), MAXREQ, fp))
+        {
+            write(fd, buffer, strlen(buffer));
+            printf("Writing\n");
+        }
 
         close(fd);
     }
