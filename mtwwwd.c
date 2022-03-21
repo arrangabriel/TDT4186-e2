@@ -12,7 +12,7 @@
 #include <sys/types.h>
 
 #define MAXREQ (4096 * 1024)
-char *webroot;
+char webroot[PATH_MAX];
 
 void error(const char *msg)
 {
@@ -20,9 +20,9 @@ void error(const char *msg)
     exit(EXIT_FAILURE);
 }
 
-int verify_path(char *rootpath, char *subpath)
+int path_contains(char *path, char *subpath)
 {
-    return strstr(subpath, rootpath) == NULL;
+    return strstr(path, subpath) != NULL;
 }
 
 void *handle_request(void *bb)
@@ -31,29 +31,37 @@ void *handle_request(void *bb)
     {
         char buffer[MAXREQ];
         int bufferlen = sizeof(buffer);
+        int urllen = PATH_MAX - strlen(webroot);
         int fd = bb_get(bb);
 
         bzero(buffer, bufferlen);
 
-        if (read(fd, buffer, bufferlen - 1) < 0)
+        if (read(fd, buffer, 4 + urllen) < 0)
             error("read failed");
 
-        char *urlstart = strstr(buffer, "/");
-        char *urlend = strstr(urlstart, " ");
-        size_t urllen = urlend - urlstart;
-        char *url = (char *)malloc(urllen);
-        strncpy(url, urlstart, urllen);
+        char req_type[3];
+        char url[urllen];
+        sscanf(buffer, "%3s %s", req_type, url);
+        if (strstr(buffer, " ") - &buffer[0] != 3 || strcmp(req_type, "GET"))
+        {
+            char notfound[] = "HTTP/0.9 400 Bad Request";
+            write(fd, notfound, strlen(notfound));
+            close(fd);
+            continue;
+        }
 
-        char root_path[PATH_MAX];
-        realpath(webroot, root_path);
+        /*
+         * The program is configured to parse requests on the form '(3 character string)(whitespace)(document-path)(whitespace/null character/newline)(arbitrary characters)'
+         * This is in line with the HTTP 0.9 protocol, which has the form 'GET /path'.
+         * Note that any deviation from this form will result in a Bad Request response.
+         *
+         */
 
-        char root[sizeof(webroot) + urllen];
-        strcpy(root, webroot);
-        strcat(root, url);
-        free(url);
+        char real_path[PATH_MAX];
         char path[PATH_MAX];
-        realpath(root, path);
-
+        strcpy(path, webroot);
+        strcat(path, url);
+        realpath(path, real_path);
         /****************************************************************************************************\
          * EXPLOIT SOLUTIONS                                                                                *
          * By using .. a client can access files on the entire file system where the server is running.     *
@@ -67,7 +75,7 @@ void *handle_request(void *bb)
          *                                                                                                  *
          * The second verify_path call simply checks if the request url contains (..).                      *
          \***************************************************************************************************/
-        if (verify_path(root_path, path) || !verify_path(root, ".."))
+        if (!path_contains(real_path, webroot) || path_contains(url, ".."))
         {
             char forbidden[] = "HTTP/0.9 403 Forbidden";
             write(fd, forbidden, strlen(forbidden));
@@ -106,7 +114,7 @@ int main(int argc, char *argv[])
     if (argc != 5)
         error("Wrong number of arguments supplied. Should be 4");
 
-    webroot = argv[1];
+    realpath(argv[1], webroot);
     int port = atoi(argv[2]);
     int thread_count = atoi(argv[3]);
     int buffer_size = atoi(argv[4]);
