@@ -30,6 +30,7 @@ BNDBUF *bb_init(unsigned int size)
     b->write = 0;
     pthread_mutex_init(&b->read_mutex, NULL);
     pthread_mutex_init(&b->write_mutex, NULL);
+    // In case of error during initialization, free all allocated resources.
     memset(b->buffer, 0, sizeof(int) * size);
     if (errno != 0)
     {
