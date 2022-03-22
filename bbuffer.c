@@ -11,7 +11,6 @@ struct BNDBUF
     SEM *s_r;
     SEM *s_w;
     unsigned int size;
-    unsigned int length;
     unsigned int read;
     unsigned int write;
     pthread_mutex_t read_mutex;
