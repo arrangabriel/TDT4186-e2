@@ -110,10 +110,16 @@ void *handle_request(void *bb)
 
 int main(int argc, char *argv[])
 {
+    char default_path[PATH_MAX];
+    realpath("./documents", default_path);
     if (argc != 5)
         error("Wrong number of arguments supplied. Required arguments are: www-path port #threads #bufferslots.");
 
-    realpath(argv[1], webroot);
+    if (strcmp(argv[1], "default") == 0)
+        strcpy(webroot, default_path);
+    else
+        realpath(argv[1], webroot);
+    
     int port = atoi(argv[2]);
     int thread_count = atoi(argv[3]);
     int buffer_size = atoi(argv[4]);
