@@ -56,7 +56,6 @@ void *handle_request(void *bb)
          * Note that any deviation from this form will result in a Bad Request response.
          *
          */
-
         char real_path[PATH_MAX];
         char path[PATH_MAX];
         strcpy(path, webroot);
@@ -112,7 +111,7 @@ void *handle_request(void *bb)
 int main(int argc, char *argv[])
 {
     if (argc != 5)
-        error("Wrong number of arguments supplied. Should be 4");
+        error("Wrong number of arguments supplied. Required arguments are: www-path port #threads #bufferslots.");
 
     realpath(argv[1], webroot);
     int port = atoi(argv[2]);
@@ -135,29 +134,24 @@ int main(int argc, char *argv[])
     serv_addr.sin6_port = htons(port);
 
     if (socket_fd == 0)
-        error("socket failed");
+        error("Socket creation failed");
 
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
-    {
-        perror("Failed to set socket options");
-    }
+        error("Failed to set socket options");
 
     if (bind(socket_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-        error("bind failed");
+        error("Socket bind failed");
 
     if (listen(socket_fd, 1) < 0)
-        error("listen failed");
-
-    pid_t pids[thread_count];
+        error("Socket listen failed");
 
     BNDBUF *bb = bb_init(buffer_size);
 
     pthread_t threads[thread_count];
 
     for (int i = 0; i < thread_count; i++)
-    {
         pthread_create(&threads[i], NULL, &handle_request, bb);
-    }
+
     while (1)
     {
         clilen = sizeof(cli_addr);
